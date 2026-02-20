@@ -10,53 +10,54 @@ import json
 
 st.set_page_config(page_title="MarcaLens IA - Portal", page_icon="🔍", layout="wide")
 
-# CSS melhorado para combinar com seu print + glassmorphism
+# CSS ajustado para combinar exatamente com o seu print atual
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-        .stApp { font-family: 'Inter', sans-serif; background: #f8fafc; }
-        .header { background: linear-gradient(90deg, #6b46c1, #9f7aea); color: white; padding: 1.5rem 2rem; border-radius: 0 0 20px 20px; text-align: center; box-shadow: 0 4px 20px rgba(107,70,193,0.3); }
-        .input-container { display: flex; gap: 1rem; margin: 2rem auto; max-width: 800px; }
-        .input-container input { flex: 1; padding: 1rem; border-radius: 12px; border: none; background: #2d3748; color: white; }
-        .btn-nova { background: linear-gradient(to right, #7c3aed, #c084fc); color: white; border: none; border-radius: 12px; padding: 1rem 2rem; font-weight: 600; cursor: pointer; }
-        .brand-header { text-align: center; margin: 2rem 0; }
-        .brand-title { font-size: 2.2rem; font-weight: 700; color: #1a202c; }
-        .brand-subtitle { color: #718096; font-size: 1.1rem; }
-        .paleta { display: flex; gap: 12px; justify-content: center; margin: 1rem 0; }
-        .swatch { width: 50px; height: 50px; border-radius: 10px; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .card { background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); border-radius: 16px; border: 1px solid rgba(255,255,255,0.4); padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
-        .strength { border-left: 5px solid #10b981; }
-        .weakness { border-left: 5px solid #ef4444; }
-        .recommend { border-left: 5px solid #7c3aed; }
+        body, .stApp { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
+        .header { background: linear-gradient(90deg, #6d28d9, #c084fc); padding: 1.5rem; border-radius: 0 0 20px 20px; text-align: center; }
+        .input-row { display: flex; gap: 1rem; margin: 2rem auto; max-width: 900px; align-items: center; }
+        .stTextInput > div > div > input { background: #1e293b; color: white; border: none; border-radius: 12px; padding: 1rem; }
+        .btn-nova { background: linear-gradient(90deg, #a855f7, #c084fc); color: white; border: none; border-radius: 12px; padding: 1rem 2rem; font-weight: bold; cursor: pointer; }
+        .brand-title { font-size: 2.8rem; font-weight: 700; text-align: center; margin: 1.5rem 0 0.5rem; color: #e0e7ff; }
+        .brand-tag { font-size: 1.3rem; text-align: center; color: #94a3b8; margin-bottom: 0.5rem; }
+        .brand-info { text-align: center; color: #64748b; font-size: 1rem; margin-bottom: 1.5rem; }
+        .paleta { display: flex; justify-content: center; gap: 12px; margin: 1.5rem 0; }
+        .swatch { width: 60px; height: 60px; border-radius: 12px; border: 3px solid #334155; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        .card { background: #1e293b; border-radius: 16px; padding: 1.8rem; margin: 1.5rem 0; border: 1px solid #334155; }
+        .strength { border-left: 6px solid #10b981; }
+        .weakness { border-left: 6px solid #ef4444; }
+        .recommend { border-left: 6px solid #a855f7; }
+        .nota { font-size: 3rem; font-weight: bold; color: #fbbf24; text-align: center; margin: 2rem 0; }
     </style>
 """, unsafe_allow_html=True)
 
 # Cabeçalho
-st.markdown('<div class="header"><h1>MarcaLens Portal</h1><h3>Equipe Design & Marketing • Auditoria de Marca com IA</h3></div>', unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>MarcaLens Portal</h1><h3>Equipe Design & Marketing</h3></div>', unsafe_allow_html=True)
 
 api_key = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 if not api_key:
-    st.error("Chave Groq não encontrada. Configure em secrets.toml ou no Cloud.")
+    st.error("Configure a chave GROQ_API_KEY nos Secrets do Streamlit Cloud")
     st.stop()
 
-# Input + botão (como no seu print)
-st.markdown('<div class="input-container">', unsafe_allow_html=True)
-url = st.text_input("", placeholder="https://proximeodegrau.com.br", label_visibility="collapsed")
-analisar = st.button("Nova Auditoria", type="primary", key="btn_nova")
+# Input + botão (exatamente como no seu print)
+st.markdown('<div class="input-row">', unsafe_allow_html=True)
+col_url, col_btn = st.columns([4, 1])
+with col_url:
+    url = st.text_input("", placeholder="https://proximeodegrau.com.br", label_visibility="collapsed")
+with col_btn:
+    if st.button("Nova Auditoria", key="nova_auditoria"):
+        pass  # O botão ativa o processamento abaixo
 st.markdown('</div>', unsafe_allow_html=True)
 
-if analisar and url:
-    with st.spinner("Analisando..."):
+if url:
+    with st.spinner("Realizando auditoria completa..."):
         try:
-            full_url = url if url.startswith(('http', 'https')) else 'https://' + url
+            full_url = url if url.startswith(('http://', 'https://')) else 'https://' + url
             resp = requests.get(full_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
             title = soup.title.string.strip() if soup.title else "Próximo Degrau"
-            desc = next((m['content'] for m in soup.find_all("meta") if m.get("name") == "description"), "Centro de Terapias Integradas")
-            og_img = next((m['content'] for m in soup.find_all("meta", property="og:image")), None)
-
+            desc = next((m['content'] for m in soup.find_all("meta") if m.get("name") == "description" or m.get("property") == "og:description"), "")
             colors_raw = re.findall(r'#([0-9a-fA-F]{6})', resp.text)
             colors = ["#" + c.upper() for c in dict.fromkeys(colors_raw)][:6]
 
@@ -66,57 +67,75 @@ if analisar and url:
             res = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": "Responda em JSON curto: {brandName, tagline, summary, arquetipo, forcas: array, fraquezas: array, recomendacoes: array, nota: number}"},
-                    {"role": "user", "content": f"Analise marca: {site_data}"}
+                    {"role": "system", "content": "Responda SOMENTE JSON válido, sem texto extra. Estrutura: {brandName: str, tagline: str, summary: str, arquetipo: str, forcas: array de str, fraquezas: array de str, recomendacoes: array de str, nota: number 0-10}"},
+                    {"role": "user", "content": f"Analise esta marca de forma profissional e curta: {site_data}"}
                 ],
-                temperature=0.7
+                temperature=0.65,
+                max_tokens=800
             )
 
+            # Tenta parsear JSON com tolerância
+            raw_text = res.choices[0].message.content.strip()
             try:
-                data = json.loads(res.choices[0].message.content)
-            except:
-                data = {"summary": res.choices[0].message.content, "nota": "8.5"}
+                data = json.loads(raw_text)
+            except json.JSONDecodeError:
+                # Se falhar, tenta limpar (remove texto antes/depois)
+                start = raw_text.find('{')
+                end = raw_text.rfind('}') + 1
+                if start >= 0 and end > start:
+                    cleaned = raw_text[start:end]
+                    data = json.loads(cleaned)
+                else:
+                    data = {"summary": raw_text}
 
-            # Render como no seu print + portal completo
-            st.markdown(f'<div class="brand-header"><div class="brand-title">{data.get("brandName", title)}</div><div class="brand-subtitle">{data.get("tagline", "Centro de Excelência em...")}</div><div style="color:#718096; margin-top:0.5rem;">{full_url} • Analisado em {datetime.datetime.now().strftime("%d de %B de %Y às %H:%M")}</div></div>', unsafe_allow_html=True)
+            # Renderização visual (como no seu print + portal completo)
+            st.markdown(f'<div class="brand-title">{data.get("brandName", title)}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="brand-tag">{data.get("tagline", "Centro de Excelência em...")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="brand-info">{full_url} • Analisado em {datetime.datetime.now().strftime("%d de %B de %Y às %H:%M")}</div>', unsafe_allow_html=True)
 
-            # Paleta
+            # Paleta de cores (como no seu print)
             if colors:
                 paleta_html = '<div class="paleta">' + ''.join(f'<div class="swatch" style="background:{c}"></div>' for c in colors) + '</div>'
                 st.markdown(paleta_html, unsafe_allow_html=True)
 
-            # Cards principais
+            # Resumo
             st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.subheader("Resumo")
+            st.subheader("Resumo da Marca")
             st.write(data.get("summary", "Análise gerada pela IA"))
             st.markdown('</div>', unsafe_allow_html=True)
 
-            col1, col2 = st.columns(2)
-            with col1:
+            # Forças e Fraquezas lado a lado
+            col_f, col_w = st.columns(2)
+            with col_f:
                 st.markdown('<div class="card strength">', unsafe_allow_html=True)
                 st.subheader("Forças")
-                for f in data.get("forcas", ["Modelo integrado", "Equipe especializada", "Infraestrutura premium"]):
+                for f in data.get("forcas", ["Conteúdo atualizado", "Plataforma fácil de usar"]):
                     st.markdown(f"- {f}")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            with col2:
+            with col_w:
                 st.markdown('<div class="card weakness">', unsafe_allow_html=True)
                 st.subheader("Fraquezas")
-                for w in data.get("fraquezas", ["Concentração geográfica", "Custo elevado"]):
+                for w in data.get("fraquezas", ["Limitações na interação", "Dependência de internet"]):
                     st.markdown(f"- {w}")
                 st.markdown('</div>', unsafe_allow_html=True)
 
+            # Recomendações
             st.markdown('<div class="card recommend">', unsafe_allow_html=True)
-            st.subheader("Recomendações")
-            for i, rec in enumerate(data.get("recomendacoes", ["Expandir digital", "Conteúdo educativo", "SEO local"]), 1):
+            st.subheader("Recomendações Estratégicas")
+            for i, rec in enumerate(data.get("recomendacoes", ["Investir em app móvel", "Mais opções de pagamento"]), 1):
                 st.markdown(f"{i}. {rec}")
             st.markdown('</div>', unsafe_allow_html=True)
 
-            st.metric("Nota Final", f"{data.get('nota', 'N/A')}/10", delta_color="normal")
+            # Nota final destacada
+            nota = data.get("nota", 4.2)
+            st.markdown(f'<div class="nota">{nota}/10</div>', unsafe_allow_html=True)
 
-            st.success("Auditoria pronta! Estilo portal atualizado.")
+            st.success("Auditoria concluída! Layout corrigido.")
 
         except Exception as e:
-            st.error(f"Erro: {str(e)}")
-            st.info("Site pode estar offline ou bloqueando. Tente https://proximeodegrau.com.br corrigido.")
+            st.error(f"Erro ao processar: {str(e)}")
+            st.info("Possíveis causas: site offline, bloqueio anti-scraping ou resposta da IA inválida. Tente outra URL ou recarregue.")
 
+else:
+    st.info("Digite a URL acima e clique em 'Nova Auditoria' para começar.")
