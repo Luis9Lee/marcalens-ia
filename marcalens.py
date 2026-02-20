@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
 import time
+import os
 
 st.set_page_config(page_title="MarcaLens IA", page_icon="🔍", layout="wide")
 
@@ -12,28 +13,31 @@ st.title("🔍 MarcaLens IA")
 st.subheader("Análise Profissional de Marca com IA")
 st.caption("Digite QUALQUER site que você quiser analisar")
 
-if "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
-else:
-    api_key = st.text_input("Groq API Key", type="password")
+api_key = os.getenv("GROQ_API_KEY")
+if not api_key:
+    try:
+        api_key = st.secrets["GROQ_API_KEY"]
+    except:
+        api_key = None
 
 modelo = st.selectbox("Modelo IA", ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], index=0)
 
 domain = st.text_input(
     "🌐 Digite QUALQUER site que você quiser",
-    placeholder="nubank.com.br ou https://www.apple.com ou magazineluiza.com.br",
-    help="Pode ser domínio simples ou URL completa com https://"
+    placeholder="nubank.com.br ou https://www.apple.com",
+    help="Domínio simples ou URL completa"
 )
 
 if st.button("🚀 Gerar Análise Completa de Marca", type="primary", use_container_width=True):
     if not domain:
-        st.error("Digite o site que você quer analisar!")
+        st.error("Digite o site!")
         st.stop()
     if not api_key:
-        st.error("Insira sua Groq API Key!")
+        st.error("Chave API não encontrada!")
+        st.info("Crie a pasta .streamlit e o arquivo secrets.toml (veja instruções abaixo)")
         st.stop()
 
-    with st.spinner(f"Analisando a marca de {domain}..."):
+    with st.spinner(f"Analisando {domain}..."):
         try:
             if not domain.startswith(('http://', 'https://')):
                 url = 'https://' + domain.strip('/')
