@@ -10,186 +10,187 @@ import json
 
 st.set_page_config(page_title="MarcaLens IA - Portal", page_icon="🔍", layout="wide")
 
-# CSS global para simular glassmorphism + gradiente + Tailwind-like
+# CSS inspirado no seu app React (glassmorphism + Inter font + gradientes)
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        body, .stApp {
-            font-family: 'Inter', sans-serif !important;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        .stApp {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .gradient-header {
+        .header-gradient {
             background: linear-gradient(135deg, #4e54c8, #8f94fb);
             color: white;
-            padding: 2rem;
-            border-radius: 16px 16px 0 0;
+            padding: 2.5rem 2rem;
+            border-radius: 0 0 24px 24px;
             text-align: center;
-            margin-bottom: 0;
+            box-shadow: 0 10px 30px rgba(78,84,200,0.2);
         }
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 20px;
+            padding: 1.8rem;
+            box-shadow: 0 8px 32px rgba(31,38,135,0.15);
+            margin-bottom: 1.5rem;
         }
-        .strength-card { background: #ecfdf5; border-left: 4px solid #10b981; }
-        .weakness-card { background: #fef2f2; border-left: 4px solid #ef4444; }
-        .recommend-card { background: #f0f9ff; border-left: 4px solid #6366f1; }
-        .color-swatch {
-            width: 60px; height: 60px; border-radius: 12px; border: 2px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-block; margin: 8px;
+        .strength { border-left: 5px solid #10b981; background: rgba(16,185,129,0.08); }
+        .weakness { border-left: 5px solid #ef4444; background: rgba(239,68,68,0.08); }
+        .recommend { border-left: 5px solid #6366f1; background: rgba(99,102,241,0.08); }
+        .color-box {
+            width: 50px; height: 50px; border-radius: 10px; border: 2px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin: 0 8px 8px 0; display: inline-block;
         }
         .stButton > button {
-            background: #6366f1 !important;
+            background: linear-gradient(90deg, #6366f1, #a855f7) !important;
             color: white !important;
+            border: none !important;
             border-radius: 12px !important;
-            padding: 0.75rem 1.5rem !important;
+            padding: 0.8rem 1.6rem !important;
             font-weight: 600 !important;
         }
+        h1, h2, h3 { color: #1e293b; }
     </style>
 """, unsafe_allow_html=True)
 
 # Cabeçalho estilo portal
 st.markdown("""
-    <div class="gradient-header">
-        <h1 style="margin:0; font-size:3rem;">🔍 MarcaLens IA</h1>
-        <h3>Análise Profissional de Marca - Portal da Equipe</h3>
+    <div class="header-gradient">
+        <h1 style="margin:0; font-size:3.2rem;">BrandLens Portal</h1>
+        <h3 style="margin:0.5rem 0 0; opacity:0.95;">Equipe Design & Marketing • Auditoria de Marca com IA</h3>
     </div>
 """, unsafe_allow_html=True)
 
+# Chave API (use secrets.toml ou Streamlit Cloud Secrets)
 api_key = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
-
 if not api_key:
-    st.error("Configure GROQ_API_KEY nos Secrets do Streamlit Cloud ou em .streamlit/secrets.toml")
+    st.error("Configure GROQ_API_KEY em .streamlit/secrets.toml ou no painel do Streamlit Cloud")
     st.stop()
 
-domain = st.text_input("🌐 URL do site para análise", placeholder="https://proxmodegrau.com.br", key="url_input")
+# Input simples (sem sidebar por enquanto, como no seu portal)
+col_input, col_btn = st.columns([5, 2])
+with col_input:
+    url = st.text_input("URL do site para auditoria", placeholder="https://proxmodegrau.com.br", key="url")
+with col_btn:
+    analisar = st.button("Nova Auditoria", type="primary", use_container_width=True, key="analisar")
 
-modelo = st.selectbox("Modelo", ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], index=0, label_visibility="collapsed")
-
-if st.button("🚀 Iniciar Análise", type="primary", use_container_width=True):
-    if not domain:
-        st.error("Digite a URL!")
-        st.stop()
-
-    with st.spinner("Extraindo dados do site e analisando marca..."):
+if analisar and url:
+    with st.spinner("Acessando site • Extraindo identidade • Gerando análise..."):
         try:
-            url = domain if domain.startswith(('http://', 'https://')) else 'https://' + domain.strip('/')
-            resp = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
+            full_url = url if url.startswith(('http://', 'https://')) else 'https://' + url
+            resp = requests.get(full_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=18)
             soup = BeautifulSoup(resp.text, 'html.parser')
 
-            title = soup.title.string.strip() if soup.title else "Marca sem título"
-            meta_desc = next((m['content'] for m in soup.find_all("meta") if m.get("name") == "description" or m.get("property") == "og:description"), "")
-            og_image = next((m['content'] for m in soup.find_all("meta", property="og:image") if m.get("content")), None)
-            if og_image and not og_image.startswith("http"):
-                og_image = urljoin(url, og_image)
+            title = soup.title.string.strip() if soup.title else "Marca sem título detectado"
+            desc = next((m['content'] for m in soup.find_all("meta") if m.get("name") == "description" or m.get("property") == "og:description"), "")
+            og_img = next((m['content'] for m in soup.find_all("meta", property="og:image") if m.get("content")), None)
+            if og_img and not og_img.startswith("http"):
+                og_img = urljoin(full_url, og_img)
 
-            colors_raw = re.findall(r'#([0-9a-fA-F]{6})', resp.text)
-            colors = ["#" + c.upper() for c in dict.fromkeys(colors_raw)][:6]
+            colors = ["#" + c.upper() for c in dict.fromkeys(re.findall(r'#([0-9a-fA-F]{6})', resp.text))][:6]
 
-            site_data = f"URL: {url}\nTítulo: {title}\nDescrição: {meta_desc[:400]}\nCores detectadas: {', '.join(colors)}"
+            site_info = f"URL: {full_url}\nTítulo: {title}\nDescrição: {desc[:500]}\nCores principais: {', '.join(colors)}"
 
             client = Groq(api_key=api_key)
-            response = client.chat.completions.create(
-                model=modelo,
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
                 messages=[
-                    {"role": "system", "content": "Você é consultor de branding premium. Responda em PT-BR curto, estruturado para dashboard: use bullets, evite texto longo. Estrutura JSON-like: {resumo: '...', forcas: ['bullet1', ...], fraquezas: [...], recomendacoes: ['1. ...'], nota: 8.7, arquetipo: 'O Cuidador', personalidade: {Sinceridade:85, Excitacao:70, ...}}"},
-                    {"role": "user", "content": f"Analise visual e concisa da marca: {site_data}"}
+                    {"role": "system", "content": "Você é especialista em branding. Responda em português do Brasil, formato JSON curto e estruturado para dashboard: {brandName, tagline, summary, arquetipo, visual: {cores: [{name, hex}], tipografia}, forcas: [array], fraquezas: [array], oportunidades: [array], ameacas: [array], recomendacoes: [array 1-4 itens], nota: numero 0-10, personalidade: {Sinceridade: int, Excitacao: int, Competencia: int, Sofisticacao: int, Robustez: int}}"},
+                    {"role": "user", "content": f"Faça análise de marca profissional e concisa baseada neste site: {site_info}"}
                 ],
-                temperature=0.65,
-                max_tokens=1000
+                temperature=0.7,
+                max_tokens=1400
             )
 
             try:
-                report = json.loads(response.choices[0].message.content)
+                data = json.loads(completion.choices[0].message.content)
             except:
-                report = {"resumo": response.choices[0].message.content, "forcas": [], "fraquezas": [], "recomendacoes": [], "nota": "N/A"}
+                data = {"summary": completion.choices[0].message.content, "nota": "N/A"}
 
-            # Dashboard visual
-            st.markdown(f"<h2 style='text-align:center; margin:2rem 0;'>{title}</h2>", unsafe_allow_html=True)
-            st.caption(f"{url} • Analisado em {datetime.date.today().strftime('%d de %B de %Y')}")
+            # Layout do portal (muito próximo do seu React)
+            st.markdown(f"<h2 style='text-align:center; margin:2.5rem 0 1rem;'>{data.get('brandName', title)}</h2>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; color:#64748b; font-size:1.1rem;'>{data.get('tagline', 'Centro de Excelência em...')}</p>", unsafe_allow_html=True)
+
+            # Info principal
+            st.markdown(f"<p style='text-align:center; color:#64748b;'>{full_url} • Analisado em {datetime.datetime.now().strftime('%d de %B de %Y às %H:%M')}</p>", unsafe_allow_html=True)
 
             # Imagem + paleta
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                if og_image:
-                    st.image(og_image, use_column_width=True)
-            with col2:
+            cols = st.columns([1, 4])
+            with cols[0]:
+                if og_img:
+                    st.image(og_img, use_column_width=True)
+            with cols[1]:
                 if colors:
-                    st.markdown("**Paleta Principal**")
-                    paleta_html = "".join([f'<div class="color-swatch" style="background:{c};" title="{c}"></div>' for c in colors])
-                    st.markdown(paleta_html, unsafe_allow_html=True)
+                    st.markdown("**Paleta detectada**")
+                    st.markdown("".join(f'<div class="color-box" style="background:{c}"></div>' for c in colors), unsafe_allow_html=True)
 
-            # Métricas principais
-            metric_cols = st.columns(3)
-            metric_cols[0].metric("Nota Final", f"{report.get('nota', 'N/A')}/10", delta_color="normal")
-            metric_cols[1].metric("Arquétipo", report.get('arquetipo', 'N/D'))
-            metric_cols[2].metric("Público Principal", "Classe A/B + Pais" if "autismo" in meta_desc.lower() else "N/D")
+            # Métricas rápidas
+            mcols = st.columns(4)
+            mcols[0].metric("Nota Final", f"{data.get('nota', 'N/A')}/10")
+            mcols[1].metric("Arquétipo", data.get('arquetipo', 'N/D'))
+            mcols[2].metric("Tipografia", data.get('visual', {}).get('tipografia', 'N/D'))
+            mcols[3].metric("Público", "Pais e Responsáveis" if "autismo" in desc.lower() else "N/D")
 
-            # Cards
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.subheader("📊 Resumo Rápido")
-            st.markdown(report.get("resumo", "Análise gerada pela IA"))
+            # Cards Forças x Fraquezas
+            fc, wc = st.columns(2)
+            with fc:
+                st.markdown('<div class="glass strength">', unsafe_allow_html=True)
+                st.subheader("Forças")
+                for item in data.get("forcas", []):
+                    st.markdown(f"- {item}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with wc:
+                st.markdown('<div class="glass weakness">', unsafe_allow_html=True)
+                st.subheader("Fraquezas")
+                for item in data.get("fraquezas", []):
+                    st.markdown(f"- {item}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            # Recomendações
+            st.markdown('<div class="glass recommend">', unsafe_allow_html=True)
+            st.subheader("Recomendações Estratégicas")
+            for i, rec in enumerate(data.get("recomendacoes", []), 1):
+                st.markdown(f"**{i}.** {rec}")
             st.markdown('</div>', unsafe_allow_html=True)
 
-            col_force, col_weak = st.columns(2)
-            with col_force:
-                st.markdown('<div class="glass-card strength-card">', unsafe_allow_html=True)
-                st.subheader("💪 Forças")
-                for f in report.get("forcas", []):
-                    st.markdown(f"• {f}")
-                st.markdown('</div>', unsafe_allow_html=True)
+            # Radar de personalidade (Chart.js simples)
+            personality = data.get("personalidade", {"Sinceridade": 80, "Excitação": 70, "Competência": 85, "Sofisticação": 60, "Robustez": 50})
+            labels = list(personality.keys())
+            values = list(personality.values())
 
-            with col_weak:
-                st.markdown('<div class="glass-card weakness-card">', unsafe_allow_html=True)
-                st.subheader("⚠️ Fraquezas")
-                for w in report.get("fraquezas", []):
-                    st.markdown(f"• {w}")
-                st.markdown('</div>', unsafe_allow_html=True)
+            radar_js = f"""
+            <div class="glass">
+                <h3>Personalidade da Marca</h3>
+                <canvas id="radar" height="300"></canvas>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                const ctx = document.getElementById('radar').getContext('2d');
+                new Chart(ctx, {{
+                    type: 'radar',
+                    data: {{
+                        labels: {json.dumps(labels)},
+                        datasets: [{{
+                            label: 'Marca',
+                            data: {json.dumps(values)},
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            borderColor: '#6366f1',
+                            pointBackgroundColor: '#6366f1',
+                            borderWidth: 2
+                        }}]
+                    }},
+                    options: {{ scale: {{ ticks: {{ beginAtZero: true, max: 100 }} }} }}
+                }});
+            </script>
+            """
+            st.markdown(radar_js, unsafe_allow_html=True)
 
-            with st.expander("⚡ Recomendações Estratégicas", expanded=True):
-                for i, rec in enumerate(report.get("recomendacoes", []), 1):
-                    st.markdown(f"{i}. {rec}")
-
-            # Radar simples (simulado com HTML + Chart.js CDN)
-            st.markdown("""
-                <div class="glass-card">
-                    <h3>🧠 Personalidade da Marca</h3>
-                    <div id="radarChart" style="height:300px;"></div>
-                </div>
-                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                <script>
-                    const ctx = document.getElementById('radarChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'radar',
-                        data: {
-                            labels: ['Sinceridade', 'Excitação', 'Competência', 'Sofisticação', 'Robustez'],
-                            datasets: [{
-                                label: 'Marca',
-                                data: [85, 70, 90, 65, 40],
-                                backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                                borderColor: '#6366f1',
-                                pointBackgroundColor: '#6366f1',
-                                borderWidth: 2
-                            }]
-                        },
-                        options: { scale: { ticks: { beginAtZero: true, max: 100 } } }
-                    });
-                </script>
-            """, unsafe_allow_html=True)
-
-            st.success("Análise completa! Visual estilo BrandLens Portal")
+            st.success("Auditoria concluída • Estilo Portal BrandLens")
 
         except Exception as e:
-            st.error(f"Erro: {str(e)}")
-            st.info("Tente outra URL ou verifique conexão/API Key.")
+            st.error(f"Problema na análise: {str(e)}")
+            st.info("Tente outra URL ou verifique se o site está online.")
